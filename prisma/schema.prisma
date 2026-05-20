@@ -1,0 +1,419 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model OTP {
+  id         String    @id @default(uuid())
+  userId     String
+  codeHash   String
+  type       OtpType
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("otps")
+}
+
+model Region {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  code        String?  @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
+
+  @@map("regions")
+}
+
+model Role {
+  id                String             @id @default(uuid())
+  name              String             @unique
+  description       String?
+  isNecRole         Boolean            @default(false)
+  termYears         Int?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  announcementRoles AnnouncementRole[]
+  notificationRoles NotificationRole[]
+  permissions       RolePermission[]
+  userRoleHistories UserRoleHistory[]
+  users             User[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model User {
+  id                     String                  @id @default(uuid())
+  employeeId             String?                 @unique
+  firstName              String?
+  lastName               String?
+  otherNames             String?
+  email                  String                  @unique
+  phone                  String?                 @unique
+  passwordHash           String
+  profilePhotoId         String?
+  roleId                 String?
+  regionId               String?
+  cadre                  String?
+  employmentStatus       EmploymentStatus        @default(serving)
+  membershipStatus       MembershipStatus        @default(active)
+  joinedDate             DateTime?
+  employmentStartDate    DateTime?
+  eligibleForElection    Boolean                 @default(false)
+  isNecMember            Boolean                 @default(false)
+  isEmailVerified        Boolean                 @default(false)
+  isPhoneVerified        Boolean                 @default(false)
+  lastLoginAt            DateTime?
+  isActive               Boolean                 @default(true)
+  createdById            String?
+  updatedById            String?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  emailVerifiedAt        DateTime?
+  failedLoginAttempts    Int                     @default(0)
+  lastActivityAt         DateTime?
+  lockedUntil            DateTime?
+  passwordChangedAt      DateTime?
+  signupCompleted        Boolean                 @default(false)
+  announcementRecipients AnnouncementRecipient[]
+  createdAnnouncements   Announcement[]
+  auditEvents            AuditEvent[]
+  dependants             Dependant[]
+  uploadedFiles          FileUpload[]
+  loginActivities        LoginActivity[]
+  nextOfKin              NextOfKin?
+  notificationRecipients NotificationRecipient[]
+  createdNotifications   Notification[]
+  otps                   OTP[]
+  refreshTokens          RefreshToken[]
+  sessions               Session[]
+  roleHistoryRecorded    UserRoleHistory[]       @relation("RoleHistoryRecordedBy")
+  userRoleHistories      UserRoleHistory[]
+  createdBy              User?                   @relation("UserCreatedBy", fields: [createdById], references: [id])
+  createdUsers           User[]                  @relation("UserCreatedBy")
+  profilePhoto           FileUpload?             @relation("ProfilePhoto", fields: [profilePhotoId], references: [id])
+  region                 Region?                 @relation(fields: [regionId], references: [id])
+  role                   Role?                   @relation(fields: [roleId], references: [id])
+  updatedBy              User?                   @relation("UserUpdatedBy", fields: [updatedById], references: [id])
+  updatedUsers           User[]                  @relation("UserUpdatedBy")
+  createdClaims          WelfareClaim[]
+
+  @@index([roleId])
+  @@index([regionId])
+  @@index([membershipStatus])
+  @@map("users")
+}
+
+model UserRoleHistory {
+  id            String    @id @default(uuid())
+  userId        String
+  roleId        String
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  reason        String?
+  recordedById  String?
+  createdAt     DateTime  @default(now())
+  recordedBy    User?     @relation("RoleHistoryRecordedBy", fields: [recordedById], references: [id])
+  role          Role      @relation(fields: [roleId], references: [id])
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_role_histories")
+}
+
+model NextOfKin {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  fullName     String
+  relationship String
+  phone        String?
+  nationalId   String?
+  address      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("next_of_kin")
+}
+
+model Dependant {
+  id                  String    @id @default(uuid())
+  userId              String
+  fullName            String
+  relationship        String
+  dateOfBirth         DateTime?
+  birthNotificationNo String?
+  nationalId          String?
+  burialPermitNo      String?
+  isActive            Boolean   @default(true)
+  deathDate           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("dependants")
+}
+
+model FileUpload {
+  id                String         @id @default(uuid())
+  originalName      String
+  fileName          String
+  mimeType          String
+  extension         String?
+  size              Int
+  storageProvider   String?
+  storagePath       String
+  publicUrl         String?
+  category          FileCategory
+  visibility        FileVisibility @default(private)
+  uploadedById      String
+  checksum          String?
+  isMalwareScanned  Boolean        @default(false)
+  malwareScanStatus String?
+  metadata          Json?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  uploadedBy        User           @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  profilePhotoUsers User[]         @relation("ProfilePhoto")
+
+  @@index([uploadedById])
+  @@index([category])
+  @@map("file_uploads")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  revoked   Boolean   @default(false)
+  revokedAt DateTime?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model LoginActivity {
+  id            String   @id @default(uuid())
+  userId        String
+  ipAddress     String?
+  userAgent     String?
+  loginAt       DateTime @default(now())
+  success       Boolean  @default(true)
+  failureReason String?
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("login_activities")
+}
+
+model AuditEvent {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String
+  entityType  String
+  entityId    String?
+  description String?
+  oldValues   Json?
+  newValues   Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entityType])
+  @@index([entityId])
+  @@map("audit_events")
+}
+
+model Session {
+  id             String   @id @default(uuid())
+  userId         String
+  refreshToken   String   @unique
+  ipAddress      String?
+  userAgent      String?
+  expiresAt      DateTime
+  revoked        Boolean  @default(false)
+  lastActivityAt DateTime @default(now())
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Notification {
+  id          String                  @id @default(uuid())
+  title       String
+  message     String
+  type        String?
+  sendToAll   Boolean                 @default(false)
+  metadata    Json?
+  createdById String?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  recipients  NotificationRecipient[]
+  targetRoles NotificationRole[]
+  createdBy   User?                   @relation(fields: [createdById], references: [id])
+
+  @@map("notifications")
+}
+
+model NotificationRecipient {
+  id             String       @id @default(uuid())
+  notificationId String
+  userId         String
+  isRead         Boolean      @default(false)
+  readAt         DateTime?
+  deliveredAt    DateTime?
+  createdAt      DateTime     @default(now())
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, userId])
+  @@index([userId])
+  @@index([notificationId])
+  @@map("notification_recipients")
+}
+
+model NotificationRole {
+  id             String       @id @default(uuid())
+  notificationId String
+  roleId         String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  role           Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, roleId])
+  @@map("notification_roles")
+}
+
+model Announcement {
+  id          String                  @id @default(uuid())
+  title       String
+  content     String
+  sendToAll   Boolean                 @default(false)
+  isPublished Boolean                 @default(false)
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  attachments Json?
+  createdById String
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  recipients  AnnouncementRecipient[]
+  targetRoles AnnouncementRole[]
+  createdBy   User                    @relation(fields: [createdById], references: [id])
+
+  @@map("announcements")
+}
+
+model AnnouncementRecipient {
+  id             String       @id @default(uuid())
+  announcementId String
+  userId         String
+  isRead         Boolean      @default(false)
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([userId])
+  @@map("announcement_recipients")
+}
+
+model AnnouncementRole {
+  id             String       @id @default(uuid())
+  announcementId String
+  roleId         String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  role           Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, roleId])
+  @@map("announcement_roles")
+}
+
+model WelfareClaim {
+  id        String   @id @default(uuid())
+  userId    String
+  claimType String
+  status    String   @default("submitted")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("welfare_claims")
+}
+
+enum EmploymentStatus {
+  serving
+  retired
+  former
+}
+
+enum MembershipStatus {
+  active
+  suspended
+  lapsed
+  expelled
+  deceased
+}
+
+enum FileCategory {
+  profile_photo
+  national_id
+  next_of_kin_document
+  dependant_document
+  claim_document
+  meeting_document
+  audit_document
+  constitution_document
+  receipt
+  other
+}
+
+enum FileVisibility {
+  private
+  restricted
+  public
+}
+
+enum OtpType {
+  email_verification
+  forgot_password
+  login_verification
+}
