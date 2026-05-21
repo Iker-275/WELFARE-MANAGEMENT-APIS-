@@ -8,7 +8,10 @@ import {
   getPermissions,
   assignPermissionToRole,
   removePermissionFromRole,
-  getRolePermissions
+  getRolePermissions,
+  assignPermissionsToRole,
+  removePermissionsFromRole,
+  syncRolePermissions
 } from "../controllers/permissionController.js";
 import { authMiddleware} from "../middleware/authMiddleware.js";
 import {
@@ -32,6 +35,23 @@ router.post("/roles",authMiddleware, createRole);
 router.get("/roles", authMiddleware, getRoles);
 router.patch("/roles/:id", authMiddleware, updateRole);
 router.delete("/roles/:id", authMiddleware, deleteRole);
+router.post(
+  "/roles/:roleId/assign",
+  authMiddleware,
+  assignPermissionsToRole
+);
+
+router.delete(
+  "/roles/:roleId/remove",
+  authMiddleware,
+  removePermissionsFromRole
+);
+
+router.put(
+  "/roles/:roleId/sync",
+  authMiddleware,
+  syncRolePermissions
+);
 
 //regions
 router.post("/regions", authMiddleware, createRegion);

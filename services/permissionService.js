@@ -1,6 +1,6 @@
 import { PermissionRepository }
 from "../repository/permissionRepo.js";
-
+import { prisma } from "../index.js";
 import { RoleRepository }
 from "../repository/roleRepo.js";
 
@@ -100,10 +100,40 @@ export class PermissionService {
     return true;
   }
 
-  async getRolePermissions(roleId) {
+//   async getRolePermissions(roleId) {
 
-    const cacheKey =
-      `role_permissions:${roleId}`;
+//     const cacheKey =
+//       `role_permissions:${roleId}`;
+
+//     const cached =
+//       await RedisService.safeGet(
+//         cacheKey
+//       );
+
+//     if (cached) {
+//       return cached;
+//     }
+
+//     const permissions =
+//       await repo.getRolePermissions(
+//         roleId
+//       );
+
+//     await RedisService.safeSet(
+//       cacheKey,
+//       permissions,
+//       600
+//     );
+
+//     return permissions;
+//   }
+async getRolePermissions(roleId) {
+
+  const cacheKey =
+    `role_permissions:${roleId}`;
+
+  // TRY CACHE FIRST
+  try {
 
     const cached =
       await RedisService.safeGet(
@@ -114,10 +144,23 @@ export class PermissionService {
       return cached;
     }
 
-    const permissions =
-      await repo.getRolePermissions(
-        roleId
-      );
+  } catch (error) {
+
+    console.error(
+      "Redis cache read failed:",
+      error.message
+    );
+
+  }
+
+  // FALLBACK TO DATABASE
+  const permissions =
+    await repo.getRolePermissions(
+      roleId
+    );
+
+  // TRY TO CACHE AGAIN
+  try {
 
     await RedisService.safeSet(
       cacheKey,
@@ -125,7 +168,102 @@ export class PermissionService {
       600
     );
 
-    return permissions;
+  } catch (error) {
+
+    console.error(
+      "Redis cache write failed:",
+      error.message
+    );
+
   }
+
+  return permissions;
+}
+
+  async assignPermissionsToRole(
+  roleId,
+  permissionIds
+) {
+
+  const role =
+    await roleRepo.findById(roleId);
+
+  if (!role) {
+    throw new Error("Role not found");
+  }
+
+  const permissions =
+    await prisma.permission.findMany({
+      where: {
+        id: {
+          in: permissionIds
+        }
+      }
+    });
+
+  if (
+    permissions.length !==
+    permissionIds.length
+  ) {
+    throw new Error(
+      "Some permissions are invalid"
+    );
+  }
+
+  const result =
+    await repo.assignManyToRole(
+      roleId,
+      permissionIds
+    );
+
+  // CLEAR CACHE
+  await RedisService.safeDelete(
+    `role_permissions:${roleId}`
+  );
+
+  return result;
+}
+
+async removePermissionsFromRole(
+  roleId,
+  permissionIds
+) {
+
+  const result =
+    await repo.removeManyFromRole(
+      roleId,
+      permissionIds
+    );
+
+  await RedisService.safeDelete(
+    `role_permissions:${roleId}`
+  );
+
+  return result;
+}
+
+async syncRolePermissions(
+  roleId,
+  permissionIds
+) {
+
+  const role =
+    await roleRepo.findById(roleId);
+
+  if (!role) {
+    throw new Error("Role not found");
+  }
+
+  await repo.syncRolePermissions(
+    roleId,
+    permissionIds
+  );
+
+  await RedisService.safeDelete(
+    `role_permissions:${roleId}`
+  );
+
+  return true;
+}
 
 }

@@ -101,7 +101,9 @@ async (req, res, next) => {
       success: false,
       message: "Failed to remove permission. " + error.message  
 
-  })
+    });
+
+  
 
 }};
 
@@ -117,7 +119,7 @@ async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      data: permissions
+       permissions
     });
 
   } catch (error) {
@@ -129,3 +131,86 @@ async (req, res, next) => {
   }
 
 }
+
+export const assignPermissionsToRole =
+async (req, res, next) => {
+
+  try {
+
+    const result =
+      await service.assignPermissionsToRole(
+        req.params.roleId,
+        req.body.permissionIds
+      );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Permissions assigned successfully",
+      data: result
+    });
+
+  } catch (error) {
+    next(error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to assign permissions. " + error.message
+    });
+  }
+
+};
+
+
+export const removePermissionsFromRole =
+async (req, res, next) => {
+
+  try {
+
+    const result =
+      await service.removePermissionsFromRole(
+        req.params.roleId,
+        req.body.permissionIds
+      );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Permissions removed successfully",
+      data: result
+    });
+
+  } catch (error) {
+    next(error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to remove permissions. " + error.message
+    });
+  }
+
+};
+
+export const syncRolePermissions =
+async (req, res, next) => {
+
+  try {
+
+    await service.syncRolePermissions(
+      req.params.roleId,
+      req.body.permissionIds
+    );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Role permissions synced successfully"
+    });
+
+  } catch (error) {
+    next(error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to sync role permissions. " + error.message
+    });
+  }
+
+};

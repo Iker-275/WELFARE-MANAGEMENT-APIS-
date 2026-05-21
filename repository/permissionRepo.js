@@ -75,4 +75,69 @@ export class PermissionRepository {
     });
   }
 
+  async assignManyToRole(roleId, permissionIds) {
+
+  return prisma.rolePermission.createMany({
+    data: permissionIds.map(permissionId => ({
+      roleId,
+      permissionId
+    })),
+
+    skipDuplicates: true
+  });
+
+}
+
+async removeManyFromRole(
+  roleId,
+  permissionIds
+) {
+
+  return prisma.rolePermission.deleteMany({
+    where: {
+      roleId,
+      permissionId: {
+        in: permissionIds
+      }
+    }
+  });
+
+}
+
+async syncRolePermissions(
+  roleId,
+  permissionIds
+) {
+
+  return prisma.$transaction(async (tx) => {
+
+    // DELETE OLD
+    await tx.rolePermission.deleteMany({
+      where: {
+        roleId
+      }
+    });
+
+    // ADD NEW
+    if (permissionIds.length > 0) {
+
+      await tx.rolePermission.createMany({
+        data: permissionIds.map(
+          permissionId => ({
+            roleId,
+            permissionId
+          })
+        ),
+
+        skipDuplicates: true
+      });
+
+    }
+
+    return true;
+
+  });
+
+}
+
 }
