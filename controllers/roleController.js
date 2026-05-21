@@ -1,81 +1,103 @@
-// role.controller.ts
-
-
 import { RoleService } from "../services/roleService.js";
 
 const service = new RoleService();
 
-export const createRole = async (req, res) => {
-
+export const createRole = async (
+  req,
+  res,
+  next
+) => {
   try {
 
-    const role = await service.createRole(req.body);
+    const role =
+      await service.createRole(req.body);
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      role
+      message: "Role created successfully",
+      data: role
     });
 
-  } catch (e) {
-
-    res.status(400).json({
+  } catch (error) {
+    next(error);
+    return res.status(500).json({
       success: false,
-      error: e.message
-    });
-
-  }
-
-};
-
-export const getRoles = async (_req, res) => {
-try {               
-  const roles = await service.getRoles();
-
-  res.json({
-    success: true,
-    roles
-  });
-} catch (e) {
-  res.status(400).json({
-    success: false,
-    error: e.message
-  });
-}
-
-};
-
-export const updateRole = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const data = req.body;
-
-    const role = await service.updateRole(id, data);
-
-    res.json({
-      success: true,
-      role
-    });
-  } catch (e) {
-    res.status(400).json({
-      success: false,
-      error: e.message
+      message: "Failed to create role. " + error.message
     });
   }
 };
 
-export const deleteRole = async (req, res) => {
+export const getRoles = async (
+  req,
+  res,
+  next
+) => {
   try {
-    const { id } = req.params;  
-    await service.deleteRole(id);
 
-    res.json({  
-        success: true,
-        message: "Role deleted successfully"
+    const roles =
+      await service.getRoles();
+
+    return res.status(200).json({
+      success: true,
+      data: roles
     });
-  } catch (e) {
-    res.status(400).json({
+
+  } catch (error) {
+    next(error);
+    return res.status(500).json({
       success: false,
-        error: e.message
+      message: "Failed to fetch roles. " + error.message
+      });
+  }
+};
+
+export const updateRole = async (
+  req,
+  res,
+  next
+) => {
+  try {
+
+    const role =
+      await service.updateRole(
+        req.params.id,
+        req.body
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: "Role updated successfully",
+      data: role
     });
-  } 
-}
+
+  } catch (error) {
+    next(error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update role. " + error.message
+      });
+  }
+};
+
+export const deleteRole = async (
+  req,
+  res,
+  next
+) => {
+  try {
+
+    await service.deleteRole(req.params.id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Role deleted successfully"
+    });
+
+  } catch (error) {
+    next(error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete role. " + error.message
+    });
+  }
+};

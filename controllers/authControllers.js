@@ -9,6 +9,10 @@ export const AuthController = {
       return res.status(201).json(response);
     } catch (error) {
       next(error);
+      return res.status(500).json({
+        success: false,
+        message: "Registration failed. " + error.message
+      });
     }
   },
 
@@ -22,6 +26,10 @@ export const AuthController = {
       return res.status(200).json(response);
     } catch (error) {
       next(error);
+      return res.status(400).json({
+        success: false,
+        message: "OTP verification failed. " + error.message
+      });
     }
   },
 
@@ -36,6 +44,10 @@ export const AuthController = {
       return res.status(200).json(response);
     } catch (error) {
       next(error);
+      return res.status(400).json({
+        success: false,
+        message: "Login failed. " + error.message
+      });
     }
   },
 };

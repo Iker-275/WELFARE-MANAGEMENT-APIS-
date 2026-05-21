@@ -1,17 +1,14 @@
 import jwt from "jsonwebtoken";
 
-import prisma from "../config/prisma.js";
+import {prisma} from "../index.js";
 
-export const authMiddleware = async (
-  req,
-  res,
-  next
-) => {
+export const authMiddleware = async (req,res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
       return res.status(401).json({
+        success: false,
         message: "Unauthorized",
       });
     }
@@ -31,6 +28,7 @@ export const authMiddleware = async (
 
     if (!user || !user.isActive) {
       return res.status(401).json({
+        success: false,
         message: "Unauthorized",
       });
     }
@@ -40,7 +38,8 @@ export const authMiddleware = async (
     next();
   } catch (error) {
     return res.status(401).json({
-      message: "Unauthorized",
+      success: false,
+      message: "Unauthorized " + error.message,
     });
   }
 };

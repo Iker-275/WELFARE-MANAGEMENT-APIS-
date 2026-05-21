@@ -1,74 +1,107 @@
-// region.controller.ts
-
-import { RegionService } from "../services/regionService.js";
+import { RegionService }
+from "../services/regionService.js";
 
 const service = new RegionService();
 
-export const createRegion = async (req, res) => {
+export const createRegion =
+async (req, res, next) => {
 
   try {
 
-    const region = await service.createRegion(req.body);
+    const region =
+      await service.createRegion(
+        req.body
+      );
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      region
+      message:
+        "Region created successfully",
+      data: region
     });
 
-  } catch (e) {
-
-    res.status(400).json({
+  } catch (error) {
+    next(error);
+    return res.status(500).json({
       success: false,
-      error: e.message
+      message: "Failed to create region. " + error.message
     });
-
   }
 
 };
 
-export const getRegions = async (_req, res) => {
+export const getRegions =
+async (req, res, next) => {
 
-  const regions = await service.getRegions();
-
-  res.json({
-    success: true,
-    regions
-  });
-
-};
-
-export const updateRegion = async (req, res) => {
   try {
-    const { id } = req.params;
-    const data = req.body;
 
-    const region = await service.updateRegion(id, data);
+    const regions =
+      await service.getRegions();
 
-    res.json({
+    return res.status(200).json({
       success: true,
-      region
+      data: regions
     });
-  } catch (e) {
-    res.status(400).json({
+
+  } catch (error) {
+    next(error);
+    return res.status(500).json({
       success: false,
-      error: e.message
+      message: "Failed to fetch regions. " + error.message
     });
   }
+
 };
 
-export const deleteRegion    = async (req, res) => {
-  try {
-    const { id } = req.params;  
-    await service.deleteRegion(id);
+export const updateRegion =
+async (req, res, next) => {
 
-    res.json({  
-        success: true,
-        message: "Region deleted successfully"
+  try {
+
+    const region =
+      await service.updateRegion(
+        req.params.id,
+        req.body
+      );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Region updated successfully",
+      data: region
     });
-  } catch (e) {
-    res.status(400).json({
+
+  } catch (error) {
+    next(error);
+    return res.status(500).json({
       success: false,
-        error: e.message
+      message: "Failed to update region. " + error.message
+    }); 
+  }
+
+};
+
+export const deleteRegion =
+async (req, res, next) => {
+
+  try {
+
+    await service.deleteRegion(
+      req.params.id
+    );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Region deleted successfully"
     });
-  } 
-}
+
+  } catch (error) {
+    next(error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete region. " + error.message
+     });
+  }
+
+};

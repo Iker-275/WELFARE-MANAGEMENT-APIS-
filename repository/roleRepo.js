@@ -1,7 +1,4 @@
-// role.repository.ts
-
-// import { prisma } from "../../prisma/client";
-import {prisma }from "../index.js";
+import { prisma } from "../index.js";
 
 export class RoleRepository {
 
@@ -27,8 +24,20 @@ export class RoleRepository {
 
   async findByName(name) {
     return prisma.role.findUnique({
-      where: { name }
+      where: {
+        name: name.toLowerCase()
+      }
     });
+  }
+
+  async roleHasUsers(id) {
+    const count = await prisma.user.count({
+      where: {
+        roleId: id
+      }
+    });
+
+    return count > 0;
   }
 
   async update(id, data) {
