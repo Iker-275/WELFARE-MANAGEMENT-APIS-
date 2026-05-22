@@ -23,10 +23,11 @@ const router = express.Router();
 //example usage permisions middlware authorize("create_role"),
 //auth
 router.post( "/register", AuthController.register);
-
 router.post("/verify-email", AuthController.verifyEmailOTP);
-
 router.post("/login", AuthController.login);
+router.post("/forgot-password", AuthController.forgotPassword);
+router.post("/verify-forgot-password-otp",AuthController.verifyForgotPasswordOTP);
+router.post("/reset-password", AuthController.resetPassword);
 
 router.use(authMiddleware);
 

@@ -2,14 +2,20 @@ import {prisma }from "../index.js";
 
 
 export const AuthRepository = {
-  findUserByEmail(email) {
-    return prisma.user.findUnique({
+async  findUserByEmail(email) {
+
+    const  user= await prisma.user.findUnique({
       where: { email },
       include: {
         role: true,
         region: true,
       },
     });
+
+   
+    if(user){
+      return user;
+    }
   },
 
   createUser(data) {
@@ -107,4 +113,12 @@ export const AuthRepository = {
       },
     });
   },
+
+  deleteUserSessions(userId) {
+  return prisma.session.deleteMany({
+    where: {
+      userId,
+    },
+  });
+},
 };

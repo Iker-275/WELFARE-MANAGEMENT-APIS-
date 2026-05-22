@@ -222,4 +222,202 @@ console.log("OTP record:", otpRecord);
       user,
     };
   },
+  async forgotPassword(email) {
+
+  const user = await AuthRepository.findUserByEmail(email );
+
+  // SECURITY:
+  // NEVER reveal if email exists
+  if (!user) {
+
+    return {
+      success: true,
+      message:
+        "If the email exists, an OTP has been sent.",
+    };
+
+  }
+
+  const otp = generateOTP();
+
+  const codeHash = await hashOTP(otp);
+
+  const expiresAt = dayjs()
+    .add(
+      OTP_EXPIRY_MINUTES,
+      "minute"
+    )
+    .toDate();
+
+  await AuthRepository.createOTP({
+    userId: user.id,
+
+    codeHash,
+
+    type:
+      OTP_TYPES.FORGOT_PASSWORD,
+
+    expiresAt,
+  });
+
+  await sendOTPEmail(
+    user.email,
+    otp
+  );
+
+  return {
+    success: true,
+    message:
+      "If the email exists, an OTP has been sent.",
+  };
+
+},
+
+async verifyForgotPasswordOTP(
+  email,
+  otp
+) {
+
+  const user =
+    await AuthRepository.findUserByEmail(
+      email
+    );
+
+  if (!user) {
+    throw new Error(
+      "Invalid request"
+    );
+  }
+
+  const otpRecord = await AuthRepository.getLatestOTP(
+      user.id,
+      OTP_TYPES.FORGOT_PASSWORD
+    );
+
+  if (!otpRecord) {
+    throw new Error(
+      "OTP not found"
+    );
+  }
+
+  if (otpRecord.verifiedAt) {
+    throw new Error(
+      "OTP already used"
+    );
+  }
+
+  if (dayjs().isAfter( dayjs(otpRecord.expiresAt))
+  ) {
+    throw new Error(
+      "OTP expired"
+    );
+  }
+
+  const validOTP = await compareOTP(
+      otp,
+      otpRecord.codeHash
+    );
+
+  if (!validOTP) {
+    throw new Error(
+      "Invalid OTP"
+    );
+  }
+
+  await AuthRepository.markOTPVerified(
+    otpRecord.id
+  );
+
+  return {
+    success: true,
+    message: "OTP verified",
+  };
+
+},
+async resetPassword(data) {
+
+  const {
+    email,
+    otp,
+    newPassword
+  } = data;
+
+  const user =
+    await AuthRepository.findUserByEmail(
+      email
+    );
+
+  if (!user) {
+    throw new Error(
+      "Invalid request"
+    );
+  }
+
+  const otpRecord =
+    await AuthRepository.getLatestOTP(
+      user.id,
+      OTP_TYPES.FORGOT_PASSWORD
+    );
+
+  if (!otpRecord) {
+    throw new Error(
+      "OTP not found"
+    );
+  }
+
+  if (otpRecord.verifiedAt) {
+    throw new Error(
+      "OTP already used"
+    );
+  }
+
+  if (
+    dayjs().isAfter(
+      dayjs(otpRecord.expiresAt)
+    )
+  ) {
+    throw new Error(
+      "OTP expired"
+    );
+  }
+
+  const validOTP =
+    await compareOTP(
+      otp,
+      otpRecord.codeHash
+    );
+
+  if (!validOTP) {
+    throw new Error(
+      "Invalid OTP"
+    );
+  }
+
+  const passwordHash =
+    await hashValue(
+      newPassword
+    );
+
+  await AuthRepository.updatePassword(
+    user.id,
+    passwordHash
+  );
+
+  // MARK OTP USED
+  await AuthRepository.markOTPVerified(
+    otpRecord.id
+  );
+
+  // INVALIDATE SESSIONS
+  await AuthRepository.deleteUserSessions(
+    user.id
+  );
+
+  return {
+    success: true,
+    message:
+      "Password reset successful",
+  };
+
+}
 };
