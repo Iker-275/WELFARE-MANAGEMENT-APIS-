@@ -3,6 +3,91 @@ import { prisma } from "../index.js";
 export class NotificationRepository {
 
   // ======================================================
+// CREATE TARGET REGIONS
+// ======================================================
+
+async createNotificationRegions(
+  notificationId,
+  regionIds
+) {
+
+  if (!regionIds?.length) {
+    return;
+  }
+
+  return prisma.notificationRegion.createMany({
+    data: regionIds.map(regionId => ({
+      notificationId,
+      regionId,
+    })),
+
+    skipDuplicates: true,
+  });
+
+}
+// ======================================================
+// GET TARGET USERS
+// ======================================================
+
+async getTargetUsers({
+  roleIds = [],
+  regionIds = [],
+  sendToAll = false,
+}) {
+
+  // SEND TO ALL
+
+  if (sendToAll) {
+
+    return prisma.user.findMany({
+      where: {
+        isActive: true,
+      },
+
+      select: {
+        id: true,
+      },
+    });
+
+  }
+
+  // BUILD FILTER
+
+  const where = {
+    isActive: true,
+  };
+
+  // FILTER ROLES
+
+  if (roleIds.length > 0) {
+
+    where.roleId = {
+      in: roleIds,
+    };
+
+  }
+
+  // FILTER REGIONS
+
+  if (regionIds.length > 0) {
+
+    where.regionId = {
+      in: regionIds,
+    };
+
+  }
+
+  return prisma.user.findMany({
+    where,
+
+    select: {
+      id: true,
+    },
+  });
+
+}
+
+  // ======================================================
   // CREATE NOTIFICATION
   // ======================================================
 
@@ -38,45 +123,9 @@ export class NotificationRepository {
 
   }
 
-  // ======================================================
-  // GET USERS BY ROLE IDS
-  // ======================================================
 
-  async getUsersByRoles(roleIds) {
 
-    return prisma.user.findMany({
-      where: {
-        roleId: {
-          in: roleIds,
-        },
-
-        isActive: true,
-      },
-
-      select: {
-        id: true,
-      },
-    });
-
-  }
-
-  // ======================================================
-  // GET ALL USERS
-  // ======================================================
-
-  async getAllUsers() {
-
-    return prisma.user.findMany({
-      where: {
-        isActive: true,
-      },
-
-      select: {
-        id: true,
-      },
-    });
-
-  }
+  
 
   // ======================================================
   // CREATE RECIPIENTS

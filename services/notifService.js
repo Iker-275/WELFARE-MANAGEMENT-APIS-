@@ -10,70 +10,80 @@ export class NotificationService {
   // CREATE NOTIFICATION
   // ======================================================
 
-  async createNotification(data,createdById) {
+ 
+  async createNotification(data, createdById) {
 
-    const {
+  const {
+    title,
+    message,
+    type,
+    metadata,
+
+    sendToAll,
+
+    roleIds = [],
+    regionIds = [],
+
+  } = data;
+
+  // CREATE NOTIFICATION
+  if ( !sendToAll &&roleIds.length === 0 &&regionIds.length === 0) {
+  throw new Error( "Select at least one role or region" );
+}
+
+  const notification =await repo.createNotification({
+
       title,
       message,
       type,
       metadata,
+
       sendToAll,
-      roleIds = [],
-    } = data;
 
-    // CREATE NOTIFICATION
+      createdById,
 
-    const notification = await repo.createNotification({
+    });
 
-        title,
-        message,
-        type,
-        metadata,
+  // STORE ROLES
 
-        sendToAll,
+  if (!sendToAll) {
 
-        createdById,
-
-      });
-
-    // STORE TARGET ROLES
-
-    if (!sendToAll) {
-
-      await repo.createNotificationRoles(
-        notification.id,
-        roleIds
-      );
-
-    }
-
-    // GET RECIPIENT USERS
-
-    let users = [];
-
-    if (sendToAll) {
-
-      users = await repo.getAllUsers();
-
-    } else {
-
-      users =  await repo.getUsersByRoles( roleIds);
-
-    }
-
-    // CREATE RECIPIENT RECORDS
-
-    await repo.createRecipients(
-
+    await repo.createNotificationRoles(
       notification.id,
-
-      users.map(user => user.id)
-
+      roleIds
     );
 
-    return notification;
+    await repo.createNotificationRegions(
+      notification.id,
+      regionIds
+    );
 
   }
+
+  // GET USERS
+
+  const users =
+    await repo.getTargetUsers({
+
+      roleIds,
+      regionIds,
+      sendToAll,
+
+    });
+
+  // CREATE RECIPIENTS
+
+  await repo.createRecipients(
+
+    notification.id,
+
+    users.map(user => user.id)
+
+  );
+
+  return notification;
+
+}
 
   // ======================================================
   // GET MY NOTIFICATIONS

@@ -9,84 +9,97 @@ export class AnnouncementService {
   // CREATE
   // ======================================================
 
-  async createAnnouncement( data, createdById) {
+  
 
-    const {
+  async createAnnouncement(data, createdById) {
+
+  const {
+    title,
+    content,
+    attachments,
+    expiresAt,
+
+    sendToAll,
+
+    roleIds = [],
+    regionIds = [],
+
+    isPublished = false,
+
+  } = data;
+
+  // VALIDATION
+
+  if (!sendToAll && roleIds.length === 0 && regionIds.length === 0) {
+    throw new Error( "Select at least one role or region");
+  }
+
+  // CREATE ANNOUNCEMENT
+
+  const announcement =
+    await repo.createAnnouncement({
+
       title,
       content,
+
       attachments,
+
       expiresAt,
+
       sendToAll,
-      roleIds = [],
-      isPublished = false,
-    } = data;
 
-    const announcement = await repo.createAnnouncement({
+      isPublished,
 
-        title,
-        content,
+      publishedAt:
+        isPublished
+          ? new Date()
+          : null,
 
-        attachments,
+      createdById,
 
-        expiresAt,
+    });
 
-        sendToAll,
+  // STORE TARGETS
 
-        isPublished,
+  if (!sendToAll) {
 
-        publishedAt:
-          isPublished
-            ? new Date()
-            : null,
-
-        createdById,
-
-      });
-
-    // STORE TARGET ROLES
-
-    if (!sendToAll) {
-
-      await repo.createAnnouncementRoles(
-        announcement.id,
-        roleIds
-      );
-
-    }
-
-    // GET USERS
-
-    let users = [];
-
-    if (sendToAll) {
-
-      users =
-        await repo.getAllUsers();
-
-    } else {
-
-      users =
-        await repo.getUsersByRoles(
-          roleIds
-        );
-
-    }
-
-    // CREATE RECIPIENTS
-
-    await repo.createRecipients(
-
+    await repo.createAnnouncementRoles(
       announcement.id,
-
-      users.map(
-        user => user.id
-      )
-
+      roleIds
     );
 
-    return announcement;
+    await repo.createAnnouncementRegions(
+      announcement.id,
+      regionIds
+    );
 
   }
+
+  // GET USERS
+
+  const users =
+    await repo.getTargetUsers({
+
+      roleIds,
+      regionIds,
+
+      sendToAll,
+
+    });
+
+  // CREATE RECIPIENTS
+
+  await repo.createRecipients(
+
+    announcement.id,
+
+    users.map(user => user.id)
+
+  );
+
+  return announcement;
+
+}
 
   // ======================================================
   // MY ANNOUNCEMENTS

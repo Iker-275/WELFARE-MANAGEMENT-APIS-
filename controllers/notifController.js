@@ -23,7 +23,7 @@ export const NotificationController = {
       next(error);
       return res.status(500).json({
         success: false,
-        message:   "Failed to create notification",
+        message:   "Failed to create notification. " +error.message,
       });
 
     }
@@ -54,7 +54,7 @@ export const NotificationController = {
       next(error);
         return res.status(500).json({
         success: false,
-        message: "Failed to fetch notifications",
+        message: "Failed to fetch notifications. " +error.message,
       });
 
     }
@@ -77,7 +77,7 @@ export const NotificationController = {
       next(error);
       return res.status(500).json({
         success: false,
-        message:"Failed to fetch unread count",
+        message:"Failed to fetch unread count. " +error.message,
       });
 
     }
@@ -100,7 +100,7 @@ export const NotificationController = {
       next(error);
         return res.status(500).json({
         success: false,
-        message: "Failed to mark notification as read",
+        message: "Failed to mark notification as read. " +error.message,
       });
 
     }
@@ -124,7 +124,7 @@ export const NotificationController = {
       next(error);
       return res.status(500).json({
         success: false,
-        message: "Failed to mark all notifications as read",
+        message: "Failed to mark all notifications as read. " +error.message,
       });
 
     }

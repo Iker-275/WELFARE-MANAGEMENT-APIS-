@@ -22,7 +22,7 @@ export const AnnouncementController = {
       next(error);
         return res.status(500).json({
         success: false,
-        message: "Failed to create announcement",
+        message: "Failed to create announcement. " + error.message,
       });
 
     }
@@ -53,7 +53,7 @@ export const AnnouncementController = {
       next(error);
       return res.status(500).json({
         success: false,
-        message: "Failed to fetch announcements",
+        message: "Failed to fetch announcements. " + error.message,
       });
 
     }
@@ -76,7 +76,7 @@ export const AnnouncementController = {
       next(error);
 return res.status(500).json({
         success: false,
-        message: "Failed to fetch unread count",
+        message: "Failed to fetch unread count. " + error.message,
       });   
     }
 
@@ -98,7 +98,7 @@ return res.status(500).json({
       next(error);
       return res.status(500).json({
         success: false,
-        message: "Failed to mark announcement as read",
+        message: "Failed to mark announcement as read. " + error.message,
       });
 
     }
@@ -121,7 +121,7 @@ return res.status(500).json({
       next(error);
       return res.status(500).json({
         success: false,
-        message: "Failed to mark all announcements as read",
+        message: "Failed to mark all announcements as read. " + error.message,
       });
     }
 
@@ -144,7 +144,7 @@ return res.status(500).json({
       next(error);
         return res.status(500).json({
         success: false,
-        message: "Failed to publish announcement",
+        message: "Failed to publish announcement. " + error.message,
          });
 
     }
@@ -168,7 +168,7 @@ return res.status(500).json({
       next(error);
         return res.status(500).json({
         success: false,
-        message: "Failed to unpublish announcement",
+        message: "Failed to unpublish announcement. " + error.message,
       });
 
     }

@@ -23,13 +23,15 @@ model OTP {
 }
 
 model Region {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  code        String?  @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  users       User[]
+  id                  String               @id @default(uuid())
+  name                String               @unique
+  code                String?              @unique
+  description         String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  users               User[]
+  notificationTargets NotificationRegion[]
+  announcementTargets AnnouncementRegion[]
 
   @@map("regions")
 }
@@ -279,18 +281,19 @@ model Session {
 }
 
 model Notification {
-  id          String                  @id @default(uuid())
-  title       String
-  message     String
-  type        String?
-  sendToAll   Boolean                 @default(false)
-  metadata    Json?
-  createdById String?
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
-  recipients  NotificationRecipient[]
-  targetRoles NotificationRole[]
-  createdBy   User?                   @relation(fields: [createdById], references: [id])
+  id            String                  @id @default(uuid())
+  title         String
+  message       String
+  type          String?
+  sendToAll     Boolean                 @default(false)
+  metadata      Json?
+  createdById   String?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  recipients    NotificationRecipient[]
+  targetRoles   NotificationRole[]
+  targetRegions NotificationRegion[]
+  createdBy     User?                   @relation(fields: [createdById], references: [id])
 
   @@map("notifications")
 }
@@ -323,21 +326,50 @@ model NotificationRole {
   @@map("notification_roles")
 }
 
+model NotificationRegion {
+  id String @id @default(uuid())
+
+  notificationId String
+  regionId       String
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  region Region @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, regionId])
+  @@map("notification_regions")
+}
+
+model AnnouncementRegion {
+  id String @id @default(uuid())
+
+  announcementId String
+  regionId       String
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  region Region @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, regionId])
+  @@map("announcement_regions")
+}
+
 model Announcement {
-  id          String                  @id @default(uuid())
-  title       String
-  content     String
-  sendToAll   Boolean                 @default(false)
-  isPublished Boolean                 @default(false)
-  publishedAt DateTime?
-  expiresAt   DateTime?
-  attachments Json?
-  createdById String
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
-  recipients  AnnouncementRecipient[]
-  targetRoles AnnouncementRole[]
-  createdBy   User                    @relation(fields: [createdById], references: [id])
+  id            String                  @id @default(uuid())
+  title         String
+  content       String
+  sendToAll     Boolean                 @default(false)
+  isPublished   Boolean                 @default(false)
+  publishedAt   DateTime?
+  expiresAt     DateTime?
+  attachments   Json?
+  createdById   String
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  recipients    AnnouncementRecipient[]
+  targetRoles   AnnouncementRole[]
+  targetRegions AnnouncementRegion[]
+  createdBy     User                    @relation(fields: [createdById], references: [id])
 
   @@map("announcements")
 }

@@ -2,10 +2,28 @@ import { prisma } from "../index.js";
 
 export class AnnouncementRepository {
 
-  // ======================================================
-  // CREATE ANNOUNCEMENT
-  // ======================================================
 
+
+  // ======================================================
+// CREATE TARGET REGIONS
+// ======================================================
+
+async createAnnouncementRegions(announcementId,regionIds) {
+
+  if (!regionIds?.length) {
+    return;
+  }
+
+  return prisma.announcementRegion.createMany({
+    data: regionIds.map(regionId => ({
+      announcementId,
+      regionId,
+    })),
+
+    skipDuplicates: true,
+  });
+
+}
   async createAnnouncement(data) {
 
     return prisma.announcement.create({
@@ -18,10 +36,7 @@ export class AnnouncementRepository {
   // CREATE TARGET ROLES
   // ======================================================
 
-  async createAnnouncementRoles(
-    announcementId,
-    roleIds
-  ) {
+  async createAnnouncementRoles(announcementId,roleIds) {
 
     if (!roleIds?.length) {
       return;
@@ -38,33 +53,20 @@ export class AnnouncementRepository {
 
   }
 
+ 
   // ======================================================
-  // GET USERS BY ROLES
-  // ======================================================
+// GET TARGET USERS
+// ======================================================
 
-  async getUsersByRoles(roleIds) {
+async getTargetUsers({
+  roleIds = [],
+  regionIds = [],
+  sendToAll = false,
+}) {
 
-    return prisma.user.findMany({
-      where: {
-        roleId: {
-          in: roleIds,
-        },
+  // SEND TO ALL
 
-        isActive: true,
-      },
-
-      select: {
-        id: true,
-      },
-    });
-
-  }
-
-  // ======================================================
-  // GET ALL USERS
-  // ======================================================
-
-  async getAllUsers() {
+  if (sendToAll) {
 
     return prisma.user.findMany({
       where: {
@@ -78,6 +80,41 @@ export class AnnouncementRepository {
 
   }
 
+  // BUILD FILTER
+
+  const where = {
+    isActive: true,
+  };
+
+  // ROLE FILTER
+
+  if (roleIds.length > 0) {
+
+    where.roleId = {
+      in: roleIds,
+    };
+
+  }
+
+  // REGION FILTER
+
+  if (regionIds.length > 0) {
+
+    where.regionId = {
+      in: regionIds,
+    };
+
+  }
+
+  return prisma.user.findMany({
+    where,
+
+    select: {
+      id: true,
+    },
+  });
+
+}
   // ======================================================
   // CREATE RECIPIENTS
   // ======================================================
@@ -102,14 +139,9 @@ export class AnnouncementRepository {
   // GET USER ANNOUNCEMENTS
   // ======================================================
 
-  async getUserAnnouncements(
-    userId,
-    page = 1,
-    limit = 20
-  ) {
+  async getUserAnnouncements(userId,page = 1, limit = 20) {
 
-    const skip =
-      (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
     return prisma.announcementRecipient.findMany({
       where: {
