@@ -20,6 +20,9 @@ import {
 } from "../config/config.js";
 
 import { sendOTPEmail } from "./mailService.js";
+import {
+  emailQueue
+} from "./jobs/queues/emailqueue.js";
 
 export const AuthService = {
   async register(data) {
@@ -161,6 +164,10 @@ console.log("OTP record:", otpRecord);
       );
     }
 
+    if (!user.isActive) {
+  throw new Error("Account is deactivated. Contact admin.");
+}
+
     const validPassword = await compareHash(
       data.password,
       user.passwordHash
@@ -260,10 +267,29 @@ console.log("OTP record:", otpRecord);
     expiresAt,
   });
 
-  await sendOTPEmail(
-    user.email,
-    otp
-  );
+
+await emailQueue.add("send-email",
+ {
+    type: "SEND_OTP",
+    payload: {
+      email: user.email,
+      otp,
+    },
+  },
+  {
+    attempts: 3,
+    backoff: {
+      type: "exponential",
+      delay: 3000,
+    },
+    removeOnComplete: true,
+    removeOnFail: false,
+  }
+);
+  // await sendOTPEmail(
+  //   user.email,
+  //   otp
+  // );
 
   return {
     success: true,

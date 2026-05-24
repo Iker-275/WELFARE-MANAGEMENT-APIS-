@@ -3,6 +3,7 @@ import express from "express";
 import { AuthController } from "../controllers/authControllers.js";
 import {createRole, getRoles,updateRole,deleteRole} from "../controllers/roleController.js";
 import { createRegion, getRegions, updateRegion, deleteRegion} from "../controllers/regionController.js";
+import { UserController }from "../controllers/userController.js";
 import {createPermission, getPermissions, assignPermissionToRole,removePermissionFromRole,getRolePermissions,assignPermissionsToRole, removePermissionsFromRole, syncRolePermissions} from "../controllers/permissionController.js";
 import { authMiddleware} from "../middleware/authMiddleware.js";
 import { authorize} from "../middleware/permissionMiddleware.js";
@@ -137,6 +138,35 @@ router.patch(
   AnnouncementController.unpublish
 );
 
+//user routes
+router.get(
+  "/users",
+  // authorize("users.view"),
+  UserController.getUsers
+);
 
+router.get(
+  "/users/:id",
+  // authorize("users.view"),
+  UserController.getUser
+);
+
+router.put(
+  "/users/:id",
+  // authorize("users.update"),
+  UserController.updateUser
+);
+
+router.patch(
+  "/users/:id/activate",
+  // authorize("users.activate"),
+  UserController.activate
+);
+
+router.patch(
+  "/users/:id/deactivate",
+  // authorize("users.deactivate"),
+  UserController.deactivate
+);
 
 export default router;

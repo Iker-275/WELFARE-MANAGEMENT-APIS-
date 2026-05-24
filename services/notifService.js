@@ -1,8 +1,10 @@
 import { NotificationRepository }
 from "../repository/notifRepo.js";
+  // CREATE RECIPIENTS
+import {notificationQueue} from "./jobs/queues/notificationQueue.js";
 
-const repo =
-  new NotificationRepository();
+
+const repo = new NotificationRepository();
 
 export class NotificationService {
 
@@ -62,8 +64,7 @@ export class NotificationService {
 
   // GET USERS
 
-  const users =
-    await repo.getTargetUsers({
+  const users = await repo.getTargetUsers({
 
       roleIds,
       regionIds,
@@ -71,8 +72,25 @@ export class NotificationService {
 
     });
 
-  // CREATE RECIPIENTS
 
+
+// await notificationQueue.add("process-notification",
+// {
+//     notificationId: notification.id,
+//     roleIds,
+//     regionIds,
+//     sendToAll,
+//   },
+//   {
+//     attempts: 3,
+//     backoff: {
+//       type: "exponential",
+//       delay: 5000,
+//     },
+//     removeOnComplete: true,
+//   }
+
+// );
   await repo.createRecipients(
 
     notification.id,
@@ -84,7 +102,99 @@ export class NotificationService {
   return notification;
 
 }
+async createNotification2(data, createdById) {
 
+  const {
+    title,
+    message,
+    type,
+    metadata,
+
+    sendToAll,
+
+    roleIds = [],
+    regionIds = [],
+
+  } = data;
+
+  // VALIDATION
+
+  if (
+    !sendToAll &&
+    roleIds.length === 0 &&
+    regionIds.length === 0
+  ) {
+    throw new Error(
+      "Select at least one role or region"
+    );
+  }
+
+  // CREATE NOTIFICATION
+
+  const notification =
+    await repo.createNotification({
+
+      title,
+      message,
+      type,
+      metadata,
+
+      sendToAll,
+
+      createdById,
+
+    });
+
+  // STORE TARGETS
+
+  if (!sendToAll) {
+
+    await repo.createNotificationRoles(
+      notification.id,
+      roleIds
+    );
+
+    await repo.createNotificationRegions(
+      notification.id,
+      regionIds
+    );
+
+  }
+
+  // QUEUE BACKGROUND PROCESSING
+
+  await notificationQueue.add(
+
+    "process-notification",
+
+    {
+      notificationId:
+        notification.id,
+
+      roleIds,
+      regionIds,
+
+      sendToAll,
+    },
+
+    {
+      attempts: 3,
+
+      backoff: {
+        type: "exponential",
+        delay: 5000,
+      },
+
+      removeOnComplete: 100,
+
+      removeOnFail: 500,
+    }
+
+  );
+
+  return notification;
+
+}
   // ======================================================
   // GET MY NOTIFICATIONS
   // ======================================================
