@@ -415,11 +415,37 @@ model User {
 
   roleHistoryRecorded UserRoleHistory[] @relation("RoleHistoryRecordedBy")
 
+  deactivatedAt   DateTime?
+  deactivatedById String?
+
+  deactivationReason String?
+
+  suspendedAt    DateTime?
+  suspendedUntil DateTime?
+
+  revokedAt DateTime?
+
+  deactivatedBy User? @relation("UserDeactivatedBy", fields: [deactivatedById], references: [id])
+
+  deactivatedUsers User[] @relation("UserDeactivatedBy")
+
+  performedAuditEvents AuditEvent[] @relation("AuditPerformedBy")
+
+  affectedAuditEvents AuditEvent[] @relation("AuditAffectedUser")
+
   // ======================================================
   // INDEXES
   // ======================================================
   welfareClaims WelfareClaim[]
 
+  @@index([email])
+  @@index([employmentStatus])
+  @@index([isActive])
+  @@index([isNecMember])
+  @@index([eligibleForElection])
+  @@index([createdAt])
+  @@index([firstName])
+  @@index([lastName])
   @@index([roleId])
   @@index([regionId])
   @@index([membershipStatus])
@@ -445,17 +471,36 @@ model UserRoleHistory {
 }
 
 model NextOfKin {
-  id           String   @id @default(uuid())
-  userId       String   @unique
-  fullName     String
-  relationship String
-  phone        String?
-  nationalId   String?
-  address      String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id String @id @default(uuid())
 
+  userId String @unique
+
+  fullName String
+
+  relationship String
+
+  phone String?
+
+  alternativePhone String?
+
+  email String?
+
+  nationalId String?
+
+  address String?
+
+  occupation String?
+
+  isPrimary Boolean @default(true)
+
+  remarks String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([nationalId])
   @@map("next_of_kin")
 }
 
@@ -500,6 +545,8 @@ model FileUpload {
   uploadedBy        User           @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
   profilePhotoUsers User[]         @relation("ProfilePhoto")
   importJobs        ImportJob[]
+  isDeleted         Boolean        @default(false)
+  deletedAt         DateTime?
 
   @@index([uploadedById])
   @@index([category])
@@ -537,36 +584,113 @@ model LoginActivity {
 }
 
 model AuditEvent {
-  id          String   @id @default(uuid())
-  userId      String?
-  action      String
-  entityType  String
-  entityId    String?
-  description String?
-  oldValues   Json?
-  newValues   Json?
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
-  user        User?    @relation(fields: [userId], references: [id])
+  id String @id @default(uuid())
 
-  @@index([userId])
+  // ======================================================
+  // WHO PERFORMED ACTION
+  // ======================================================
+
+  performedById String?
+
+  performedBy User? @relation("AuditPerformedBy", fields: [performedById], references: [id])
+
+  // ======================================================
+  // AFFECTED USER
+  // ======================================================
+
+  affectedUserId String?
+
+  affectedUser User? @relation("AuditAffectedUser", fields: [affectedUserId], references: [id])
+
+  // ======================================================
+  // EVENT DETAILS
+  // ======================================================
+
+  action String
+
+  module String?
+
+  entityType String
+
+  entityId String?
+
+  description String?
+
+  severity AuditSeverity @default(info)
+
+  status AuditStatus @default(success)
+
+  // ======================================================
+  // DATA CHANGES
+  // ======================================================
+
+  oldValues Json?
+
+  newValues Json?
+
+  metadata Json?
+
+  // ======================================================
+  // REQUEST CONTEXT
+  // ======================================================
+
+  ipAddress String?
+
+  userAgent String?
+
+  requestId String?
+
+  method String?
+
+  endpoint String?
+
+  // ======================================================
+  // TIMESTAMPS
+  // ======================================================
+
+  createdAt DateTime @default(now())
+
+  // ======================================================
+  // INDEXES
+  // ======================================================
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String?
+
+  @@index([performedById])
+  @@index([affectedUserId])
+  @@index([action])
   @@index([entityType])
   @@index([entityId])
+  @@index([module])
+  @@index([severity])
+  @@index([status])
+  @@index([createdAt])
   @@map("audit_events")
 }
 
+enum AuditSeverity {
+  info
+  warning
+  critical
+}
+
+enum AuditStatus {
+  success
+  failed
+}
+
 model Session {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   userId         String
-  refreshToken   String   @unique
+  refreshToken   String    @unique
   ipAddress      String?
   userAgent      String?
   expiresAt      DateTime
-  revoked        Boolean  @default(false)
-  lastActivityAt DateTime @default(now())
-  createdAt      DateTime @default(now())
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revoked        Boolean   @default(false)
+  revokedAt      DateTime?
+  lastActivityAt DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("sessions")
@@ -738,32 +862,60 @@ enum OtpType {
 model ImportJob {
   id String @id @default(uuid())
 
-  type ImportType
+  type String
 
   fileId String
 
   status ImportStatus @default(pending)
 
-  totalRecords     Int?
-  processedRecords Int?
-  failedRecords    Int?
+  totalRecords Int?
+
+  processedRecords  Int?
+  successfulRecords Int?
+  failedRecords     Int?
+
+  queueJobId String?
+  metadata Json?
+
+  startedAt   DateTime?
+  completedAt DateTime?
 
   errorReport Json?
 
   createdById String
 
   createdAt DateTime @default(now())
-
   updatedAt DateTime @updatedAt
 
-  // RELATIONS
   file FileUpload @relation(fields: [fileId], references: [id])
 
   createdBy User @relation(fields: [createdById], references: [id])
 
+  errors ImportJobError[]
+
   @@index([fileId])
   @@index([createdById])
+  @@index([status])
   @@map("import_jobs")
+}
+
+model ImportJobError {
+  id String @id @default(uuid())
+
+  importJobId String
+
+  rowNumber Int
+
+  error String
+
+  rowData Json?
+
+  createdAt DateTime @default(now())
+
+  importJob ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+
+  @@index([importJobId])
+  @@map("import_job_errors")
 }
 
 enum ImportType {

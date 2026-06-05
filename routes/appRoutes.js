@@ -9,6 +9,10 @@ import { authMiddleware} from "../middleware/authMiddleware.js";
 import { authorize} from "../middleware/permissionMiddleware.js";
 import { NotificationController} from "../controllers/notifController.js";
 import {AnnouncementController} from "../controllers/announcementController.js";
+import { getCompletionStatus } from "../controllers/profileController.js";
+// import { FileController } from "../controllers/fileController.js";
+import { NextOfKinController }from "../controllers/nextOfKinController.js";
+// import { ImportController } from "../controllers/importController.js";
 
 const router = express.Router();
 
@@ -168,5 +172,23 @@ router.patch(
   // authorize("users.deactivate"),
   UserController.deactivate
 );
+router.patch( "/users/profile-photo",
+ UserController.updateProfilePhoto
+);
 
+router.get(
+  "/profile/completion-status",
+  // authenticate,
+  getCompletionStatus
+);
+
+// router.post("/profile-photo/upload-url",FileController.generateProfilePhotoUploadUrl);
+// router.post("/profile-photo/save",FileController .saveProfilePhoto);
+
+//next of kin routes
+router.get("/nok/me", NextOfKinController.mine);
+router.post( "/nok",NextOfKinController.save);
+
+//
+// router.post("/import/next-of-kin", ImportController.uploadNextOfKin);
 export default router;

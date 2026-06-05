@@ -50,7 +50,7 @@ export const AuthService = {
     });
 
     console
-.log("Created user:", user);    
+      .log("Created user:", user);
 
     const otp = generateOTP();
 
@@ -58,8 +58,8 @@ export const AuthService = {
 
     const codeHash = await hashOTP(otp);
 
-    
-console.log("OTP hash:", codeHash);
+
+    console.log("OTP hash:", codeHash);
 
     const expiresAt = dayjs()
       .add(OTP_EXPIRY_MINUTES, "minute")
@@ -89,12 +89,12 @@ console.log("OTP hash:", codeHash);
     if (!user) {
       throw new Error("User not found");
     }
-console.log("Found user:", user);
+    console.log("Found user:", user);
     const otpRecord = await AuthRepository.getLatestOTP(
       user.id,
       OTP_TYPES.EMAIL_VERIFICATION
     );
-console.log("OTP record:", otpRecord);
+    console.log("OTP record:", otpRecord);
     if (!otpRecord) {
       throw new Error("OTP not found");
     }
@@ -136,7 +136,7 @@ console.log("OTP record:", otpRecord);
 
     console.log("Verified user:", verifiedUser);
     return {
-        success: true,
+      success: true,
       message: "Email verified successfully",
 
       accessToken,
@@ -155,18 +155,18 @@ console.log("OTP record:", otpRecord);
       throw new Error("Invalid credentials");
     }
 
-    if (
-      user.lockedUntil &&
-      dayjs().isBefore(dayjs(user.lockedUntil))
-    ) {
-      throw new Error(
-        "Account locked. Try again later."
-      );
+    if (user.lockedUntil && dayjs().isBefore(dayjs(user.lockedUntil))) {
+      throw new Error(  "Account locked. Try again later." );
+    }
+    if (user.membershipStatus === "revoked") {
+      throw new Error(  "Membership revoked" );
     }
 
     if (!user.isActive) {
-  throw new Error("Account is deactivated. Contact admin.");
-}
+      throw new Error("Account is deactivated. Contact admin.");
+    }
+
+
 
     const validPassword = await compareHash(
       data.password,
@@ -218,7 +218,7 @@ console.log("OTP record:", otpRecord);
     });
 
     return {
-        success: true,
+      success: true,
       message: "Login successful",
 
       accessToken,
@@ -231,11 +231,65 @@ console.log("OTP record:", otpRecord);
   },
   async forgotPassword(email) {
 
-  const user = await AuthRepository.findUserByEmail(email );
+    const user = await AuthRepository.findUserByEmail(email);
 
-  // SECURITY:
-  // NEVER reveal if email exists
-  if (!user) {
+    // SECURITY:
+    // NEVER reveal if email exists
+    if (!user) {
+
+      return {
+        success: true,
+        message:
+          "If the email exists, an OTP has been sent.",
+      };
+
+    }
+
+    const otp = generateOTP();
+
+    const codeHash = await hashOTP(otp);
+
+    const expiresAt = dayjs()
+      .add(
+        OTP_EXPIRY_MINUTES,
+        "minute"
+      )
+      .toDate();
+
+    await AuthRepository.createOTP({
+      userId: user.id,
+
+      codeHash,
+
+      type:
+        OTP_TYPES.FORGOT_PASSWORD,
+
+      expiresAt,
+    });
+
+
+    await emailQueue.add("send-email",
+      {
+        type: "SEND_OTP",
+        payload: {
+          email: user.email,
+          otp,
+        },
+      },
+      {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 3000,
+        },
+        removeOnComplete: true,
+        removeOnFail: false,
+      }
+    );
+    // await sendOTPEmail(
+    //   user.email,
+    //   otp
+    // );
 
     return {
       success: true,
@@ -243,207 +297,153 @@ console.log("OTP record:", otpRecord);
         "If the email exists, an OTP has been sent.",
     };
 
-  }
-
-  const otp = generateOTP();
-
-  const codeHash = await hashOTP(otp);
-
-  const expiresAt = dayjs()
-    .add(
-      OTP_EXPIRY_MINUTES,
-      "minute"
-    )
-    .toDate();
-
-  await AuthRepository.createOTP({
-    userId: user.id,
-
-    codeHash,
-
-    type:
-      OTP_TYPES.FORGOT_PASSWORD,
-
-    expiresAt,
-  });
-
-
-await emailQueue.add("send-email",
- {
-    type: "SEND_OTP",
-    payload: {
-      email: user.email,
-      otp,
-    },
   },
-  {
-    attempts: 3,
-    backoff: {
-      type: "exponential",
-      delay: 3000,
-    },
-    removeOnComplete: true,
-    removeOnFail: false,
-  }
-);
-  // await sendOTPEmail(
-  //   user.email,
-  //   otp
-  // );
 
-  return {
-    success: true,
-    message:
-      "If the email exists, an OTP has been sent.",
-  };
-
-},
-
-async verifyForgotPasswordOTP(
-  email,
-  otp
-) {
-
-  const user =
-    await AuthRepository.findUserByEmail(
-      email
-    );
-
-  if (!user) {
-    throw new Error(
-      "Invalid request"
-    );
-  }
-
-  const otpRecord = await AuthRepository.getLatestOTP(
-      user.id,
-      OTP_TYPES.FORGOT_PASSWORD
-    );
-
-  if (!otpRecord) {
-    throw new Error(
-      "OTP not found"
-    );
-  }
-
-  if (otpRecord.verifiedAt) {
-    throw new Error(
-      "OTP already used"
-    );
-  }
-
-  if (dayjs().isAfter( dayjs(otpRecord.expiresAt))
-  ) {
-    throw new Error(
-      "OTP expired"
-    );
-  }
-
-  const validOTP = await compareOTP(
-      otp,
-      otpRecord.codeHash
-    );
-
-  if (!validOTP) {
-    throw new Error(
-      "Invalid OTP"
-    );
-  }
-
-  await AuthRepository.markOTPVerified(
-    otpRecord.id
-  );
-
-  return {
-    success: true,
-    message: "OTP verified",
-  };
-
-},
-async resetPassword(data) {
-
-  const {
+  async verifyForgotPasswordOTP(
     email,
-    otp,
-    newPassword
-  } = data;
+    otp
+  ) {
 
-  const user =
-    await AuthRepository.findUserByEmail(
-      email
-    );
+    const user =
+      await AuthRepository.findUserByEmail(
+        email
+      );
 
-  if (!user) {
-    throw new Error(
-      "Invalid request"
-    );
-  }
+    if (!user) {
+      throw new Error(
+        "Invalid request"
+      );
+    }
 
-  const otpRecord =
-    await AuthRepository.getLatestOTP(
+    const otpRecord = await AuthRepository.getLatestOTP(
       user.id,
       OTP_TYPES.FORGOT_PASSWORD
     );
 
-  if (!otpRecord) {
-    throw new Error(
-      "OTP not found"
-    );
-  }
+    if (!otpRecord) {
+      throw new Error(
+        "OTP not found"
+      );
+    }
 
-  if (otpRecord.verifiedAt) {
-    throw new Error(
-      "OTP already used"
-    );
-  }
+    if (otpRecord.verifiedAt) {
+      throw new Error(
+        "OTP already used"
+      );
+    }
 
-  if (
-    dayjs().isAfter(
-      dayjs(otpRecord.expiresAt)
-    )
-  ) {
-    throw new Error(
-      "OTP expired"
-    );
-  }
+    if (dayjs().isAfter(dayjs(otpRecord.expiresAt))
+    ) {
+      throw new Error(
+        "OTP expired"
+      );
+    }
 
-  const validOTP =
-    await compareOTP(
+    const validOTP = await compareOTP(
       otp,
       otpRecord.codeHash
     );
 
-  if (!validOTP) {
-    throw new Error(
-      "Invalid OTP"
-    );
-  }
+    if (!validOTP) {
+      throw new Error(
+        "Invalid OTP"
+      );
+    }
 
-  const passwordHash =
-    await hashValue(
+    await AuthRepository.markOTPVerified(
+      otpRecord.id
+    );
+
+    return {
+      success: true,
+      message: "OTP verified",
+    };
+
+  },
+  async resetPassword(data) {
+
+    const {
+      email,
+      otp,
       newPassword
+    } = data;
+
+    const user =
+      await AuthRepository.findUserByEmail(
+        email
+      );
+
+    if (!user) {
+      throw new Error(
+        "Invalid request"
+      );
+    }
+
+    const otpRecord =
+      await AuthRepository.getLatestOTP(
+        user.id,
+        OTP_TYPES.FORGOT_PASSWORD
+      );
+
+    if (!otpRecord) {
+      throw new Error(
+        "OTP not found"
+      );
+    }
+
+    if (otpRecord.verifiedAt) {
+      throw new Error(
+        "OTP already used"
+      );
+    }
+
+    if (
+      dayjs().isAfter(
+        dayjs(otpRecord.expiresAt)
+      )
+    ) {
+      throw new Error(
+        "OTP expired"
+      );
+    }
+
+    const validOTP =
+      await compareOTP(
+        otp,
+        otpRecord.codeHash
+      );
+
+    if (!validOTP) {
+      throw new Error(
+        "Invalid OTP"
+      );
+    }
+
+    const passwordHash =
+      await hashValue(
+        newPassword
+      );
+
+    await AuthRepository.updatePassword(
+      user.id,
+      passwordHash
     );
 
-  await AuthRepository.updatePassword(
-    user.id,
-    passwordHash
-  );
+    // MARK OTP USED
+    await AuthRepository.markOTPVerified(
+      otpRecord.id
+    );
 
-  // MARK OTP USED
-  await AuthRepository.markOTPVerified(
-    otpRecord.id
-  );
+    // INVALIDATE SESSIONS
+    await AuthRepository.deleteUserSessions(
+      user.id
+    );
 
-  // INVALIDATE SESSIONS
-  await AuthRepository.deleteUserSessions(
-    user.id
-  );
+    return {
+      success: true,
+      message:
+        "Password reset successful",
+    };
 
-  return {
-    success: true,
-    message:
-      "Password reset successful",
-  };
-
-}
+  }
 };

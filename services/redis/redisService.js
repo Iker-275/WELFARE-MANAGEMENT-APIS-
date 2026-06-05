@@ -325,4 +325,29 @@ export class RedisService {
 
   }
 
+  async safeDeletePattern(pattern) {
+
+  try {
+
+    const keys =
+      await redis.keys(pattern);
+
+    if (keys.length) {
+      await redis.del(keys);
+    }
+
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "Redis DELETE PATTERN error:",
+      error
+    );
+
+    return false;
+
+  }
+
+}
 }

@@ -1,7 +1,7 @@
 // controllers/userController.js
 
 import { UserService }
-from "../services/userService.js";
+  from "../services/userService.js";
 
 const service =
   new UserService();
@@ -12,7 +12,7 @@ export const UserController = {
   // GET USERS
   // ======================================================
 
-  async getUsers(req, res, next) {
+  async getUsers2(req, res, next) {
 
     try {
 
@@ -97,6 +97,34 @@ export const UserController = {
 
   },
 
+  async getUsers(req, res, next) {
+
+  try {
+
+    const users =
+      await service.getUsers(        req.query  );
+
+    return res.status(200).json({
+
+      success: true,
+
+      ...users,
+
+    });
+
+  } catch (error) {
+
+    next(error);
+
+    return res.status(500).json({
+      success: false,
+      message:  "Failed to fetch users",
+   });
+
+  }
+
+},
+
   // ======================================================
   // GET USER
   // ======================================================
@@ -105,10 +133,9 @@ export const UserController = {
 
     try {
 
-      const user =
-        await service.getUserById(
-          req.params.id
-        );
+      const user = await service.getUserById(
+        req.params.id
+      );
 
       return res.json({
 
@@ -123,12 +150,8 @@ export const UserController = {
       next(error);
 
       return res.status(404).json({
-
         success: false,
-
-        message:
-          error.message,
-
+        message: error.message,
       });
 
     }
@@ -143,26 +166,16 @@ export const UserController = {
 
     try {
 
-      const user =
-        await service.updateUser(
+      const user = await service.updateUser(
+        req.params.id,
+        req.body,
+        req.user.id
+      );
 
-          req.params.id,
-
-          req.body,
-
-          req.user.id
-
-        );
-
-      return res.json({
-
+      return res.status(200).json({
         success: true,
-
-        message:
-          "User updated successfully",
-
+        message: "User updated successfully",
         data: user,
-
       });
 
     } catch (error) {
@@ -170,12 +183,8 @@ export const UserController = {
       next(error);
 
       return res.status(400).json({
-
         success: false,
-
-        message:
-          error.message,
-
+        message: error.message,
       });
 
     }
@@ -190,17 +199,11 @@ export const UserController = {
 
     try {
 
-      await service.activateUser(
-        req.params.id
-      );
+      await service.activateUser(req.params.id);
 
-      return res.json({
-
+      return res.status(200).json({
         success: true,
-
-        message:
-          "User activated successfully",
-
+        message: "User activated successfully",
       });
 
     } catch (error) {
@@ -208,12 +211,8 @@ export const UserController = {
       next(error);
 
       return res.status(400).json({
-
         success: false,
-
-        message:
-          error.message,
-
+        message: error.message,
       });
 
     }
@@ -224,7 +223,7 @@ export const UserController = {
   // DEACTIVATE
   // ======================================================
 
-  async deactivate(req, res, next) {
+  async deactivate2(req, res, next) {
 
     try {
 
@@ -258,4 +257,54 @@ export const UserController = {
 
   },
 
+  async deactivate(req, res, next) {
+
+    try {
+
+      await service.deactivateUser(req.params.id, req.body.reason, req.user.id);
+
+      return res.status(200).json({
+        success: true,
+        message: "User deactivated successfully",
+      });
+
+    } catch (error) {
+
+      next(error);
+
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+
+    }
+
+  },
+
+  // ======================================================
+// UPDATE PROFILE PHOTO
+// ======================================================
+
+async updateProfilePhoto(req,res,next) {
+  try {
+    const { fileId } = req.body;
+
+    const updated = await service.updateProfilePhoto(req.user.id,fileId );
+
+    return res.status(200).json({
+      success: true,
+      message:   "Profile photo updated successfully",
+      data: updated,
+    });
+
+  } catch (error) {
+
+    next(error);
+    return res.status(500).json({
+      success: false,
+      message:error.message ||   "Failed to update profile photo",
+    });
+  }
+
+}
 };

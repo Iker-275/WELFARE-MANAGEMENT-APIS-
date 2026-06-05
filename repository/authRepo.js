@@ -121,4 +121,20 @@ async  findUserByEmail(email) {
     },
   });
 },
+async revokeUserSessions(userId) {
+
+  return prisma.session.updateMany({
+
+    where: {
+      userId,
+      revokedAt: null,
+    },
+
+    data: {
+      revokedAt: new Date(),
+    },
+
+  });
+
+}
 };

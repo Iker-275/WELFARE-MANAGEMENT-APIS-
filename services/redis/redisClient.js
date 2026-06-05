@@ -11,9 +11,7 @@ const redis = new Redis({
   retryStrategy(times) {
     const delay = Math.min(times * 50, 2000);
 
-    console.log(
-      `Redis reconnecting attempt ${times}`
-    );
+    console.log(     `Redis reconnecting attempt ${times}`);
 
     return delay;
   },
