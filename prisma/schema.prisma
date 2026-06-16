@@ -29,9 +29,9 @@ model Region {
   description         String?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
-  users               User[]
-  notificationTargets NotificationRegion[]
   announcementTargets AnnouncementRegion[]
+  notificationTargets NotificationRegion[]
+  users               User[]
 
   @@map("regions")
 }
@@ -76,73 +76,32 @@ model RolePermission {
   @@map("role_permissions")
 }
 
-enum MembershipStatus {
-  active
-  inactive
-  suspended
-  revoked
-  deceased
-  resigned
-  pending
-}
-
-enum ContributionStatus {
-  pending
-  partial
-  paid
-  overdue
-  waived
-}
-
-enum ContributionPeriod {
-  monthly
-  quarterly
-  yearly
-}
-
 model MembershipFine {
-  id String @id @default(uuid())
-
-  userId String
-
-  amount Decimal @db.Decimal(18, 2)
-
-  reason String
-
-  issuedAt DateTime @default(now())
-
-  dueDate DateTime?
-
-  paid Boolean @default(false)
-
-  paidAt DateTime?
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String    @id @default(uuid())
+  userId    String
+  amount    Decimal   @db.Decimal(18, 2)
+  reason    String
+  issuedAt  DateTime  @default(now())
+  dueDate   DateTime?
+  paid      Boolean   @default(false)
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("membership_fines")
 }
 
 model AGMAttendance {
-  id String @id @default(uuid())
-
-  userId String
-
-  year Int
-
-  attended Boolean @default(false)
-
-  reason String?
-
+  id        String   @id @default(uuid())
+  userId    String
+  year      Int
+  attended  Boolean  @default(false)
+  reason    String?
   createdAt DateTime @default(now())
-
   updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, year])
   @@index([year])
@@ -150,88 +109,51 @@ model AGMAttendance {
 }
 
 model MembershipStatusHistory {
-  id String @id @default(uuid())
-
-  userId String
-
-  oldStatus MembershipStatus
-
-  newStatus MembershipStatus
-
-  reason String?
-
+  id          String           @id @default(uuid())
+  userId      String
+  oldStatus   MembershipStatus
+  newStatus   MembershipStatus
+  reason      String?
   changedById String?
-
-  changedAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  changedAt   DateTime         @default(now())
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("membership_status_histories")
 }
 
-enum Gender {
-  male
-  female
-  other
-}
-
 model ContributionType {
-  id String @id @default(uuid())
-
-  name String @unique
-
-  description String?
-
-  isRecurring Boolean @default(false)
-
+  id               String              @id @default(uuid())
+  name             String              @unique
+  description      String?
+  isRecurring      Boolean             @default(false)
   recurrencePeriod ContributionPeriod?
-
-  defaultAmount Decimal? @db.Decimal(18, 2)
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
-  contributions Contribution[]
+  defaultAmount    Decimal?            @db.Decimal(18, 2)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  contributions    Contribution[]
 
   @@map("contribution_types")
 }
 
 model Contribution {
-  id String @id @default(uuid())
-
-  userId String
-
+  id                 String             @id @default(uuid())
+  userId             String
   contributionTypeId String
-
-  amount Decimal @db.Decimal(18, 2)
-
-  penaltyAmount Decimal? @db.Decimal(18, 2)
-
-  totalAmount Decimal? @db.Decimal(18, 2)
-
-  paidAmount Decimal? @db.Decimal(18, 2)
-
-  balanceAmount Decimal? @db.Decimal(18, 2)
-
-  dueDate DateTime?
-
-  paidAt DateTime?
-
-  status ContributionStatus @default(pending)
-
-  receiptNumber String?
-
-  notes String?
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  contributionType ContributionType @relation(fields: [contributionTypeId], references: [id])
+  amount             Decimal            @db.Decimal(18, 2)
+  penaltyAmount      Decimal?           @db.Decimal(18, 2)
+  totalAmount        Decimal?           @db.Decimal(18, 2)
+  paidAmount         Decimal?           @db.Decimal(18, 2)
+  balanceAmount      Decimal?           @db.Decimal(18, 2)
+  dueDate            DateTime?
+  paidAt             DateTime?
+  status             ContributionStatus @default(pending)
+  receiptNumber      String?
+  notes              String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  contributionType   ContributionType   @relation(fields: [contributionTypeId], references: [id])
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -240,203 +162,81 @@ model Contribution {
 }
 
 model User {
-  id String @id @default(uuid())
-
-  // ======================================================
-  // ORGANIZATIONAL IDS
-  // ======================================================
-
-  employeeId       String? @unique
-  membershipNumber String? @unique
-  nationalId       String? @unique
-
-  // ======================================================
-  // BASIC PROFILE
-  // ======================================================
-
-  firstName  String?
-  lastName   String?
-  otherNames String?
-
-  gender Gender?
-
-  dateOfBirth DateTime?
-
-  email String? @unique
-  phone String? @unique
-
-  address String?
-
-  // ======================================================
-  // AUTH
-  // ======================================================
-
-  passwordHash String
-
-  isEmailVerified Boolean @default(false)
-
-  isPhoneVerified Boolean @default(false)
-
-  emailVerifiedAt DateTime?
-
-  failedLoginAttempts Int @default(0)
-
-  lockedUntil DateTime?
-
-  passwordChangedAt DateTime?
-
-  lastLoginAt DateTime?
-
-  lastActivityAt DateTime?
-
-  // ======================================================
-  // MEMBERSHIP
-  // ======================================================
-
-  membershipStatus MembershipStatus @default(active)
-
-  employmentStatus EmploymentStatus @default(serving)
-
-  joinedDate DateTime?
-
-  employmentStartDate DateTime?
-
-  membershipApprovedAt DateTime?
-
-  membershipEndedAt DateTime?
-
-  isNecMember Boolean @default(false)
-
-  eligibleForElection Boolean @default(false)
-
-  createdImportJobs ImportJob[]
-
-  // ======================================================
-  // SYSTEM
-  // ======================================================
-
-  signupCompleted Boolean @default(false)
-
-  isActive Boolean @default(true)
-
-  createdById String?
-
-  updatedById String?
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
-  // ======================================================
-  // RELATIONS
-  // ======================================================
-
-  roleId String?
-
-  regionId String?
-
-  role Role? @relation(fields: [roleId], references: [id])
-
-  region Region? @relation(fields: [regionId], references: [id])
-
-  // ======================================================
-  // FILES
-  // ======================================================
-
-  profilePhotoId String?
-
-  profilePhoto FileUpload? @relation("ProfilePhoto", fields: [profilePhotoId], references: [id])
-
-  uploadedFiles FileUpload[]
-
-  // ======================================================
-  // FAMILY
-  // ======================================================
-
-  nextOfKin NextOfKin?
-
-  dependants Dependant[]
-
-  // ======================================================
-  // AUTH RELATIONS
-  // ======================================================
-
-  otps OTP[]
-
-  refreshTokens RefreshToken[]
-
-  sessions Session[]
-
-  loginActivities LoginActivity[]
-
-  // ======================================================
-  // AUDIT
-  // ======================================================
-
-  auditEvents AuditEvent[]
-
-  userRoleHistories UserRoleHistory[]
-
-  // ======================================================
-  // COMMUNICATION
-  // ======================================================
-
-  createdNotifications Notification[]
-
-  notificationRecipients NotificationRecipient[]
-
-  createdAnnouncements Announcement[]
-
-  announcementRecipients AnnouncementRecipient[]
-
-  // ======================================================
-  // CONTRIBUTIONS
-  // ======================================================
-
-  contributions Contribution[]
-
-  membershipFines MembershipFine[]
-
-  agmAttendances AGMAttendance[]
-
+  id                      String                    @id @default(uuid())
+  employeeId              String?                   @unique
+  membershipNumber        String?                   @unique
+  nationalId              String?                   @unique
+  firstName               String?
+  lastName                String?
+  otherNames              String?
+  gender                  Gender?
+  dateOfBirth             DateTime?
+  email                   String?                   @unique
+  phone                   String?                   @unique
+  address                 String?
+  passwordHash            String
+  isEmailVerified         Boolean                   @default(false)
+  isPhoneVerified         Boolean                   @default(false)
+  emailVerifiedAt         DateTime?
+  failedLoginAttempts     Int                       @default(0)
+  lockedUntil             DateTime?
+  passwordChangedAt       DateTime?
+  lastLoginAt             DateTime?
+  lastActivityAt          DateTime?
+  membershipStatus        MembershipStatus          @default(active)
+  employmentStatus        EmploymentStatus          @default(serving)
+  joinedDate              DateTime?
+  employmentStartDate     DateTime?
+  membershipApprovedAt    DateTime?
+  membershipEndedAt       DateTime?
+  isNecMember             Boolean                   @default(false)
+  eligibleForElection     Boolean                   @default(false)
+  signupCompleted         Boolean                   @default(false)
+  isActive                Boolean                   @default(true)
+  createdById             String?
+  updatedById             String?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  roleId                  String?
+  regionId                String?
+  profilePhotoId          String?
+  deactivatedAt           DateTime?
+  deactivatedById         String?
+  deactivationReason      String?
+  revokedAt               DateTime?
+  suspendedAt             DateTime?
+  suspendedUntil          DateTime?
+  agmAttendances          AGMAttendance[]
+  announcementRecipients  AnnouncementRecipient[]
+  createdAnnouncements    Announcement[]
+  affectedAuditEvents     AuditEvent[]              @relation("AuditAffectedUser")
+  performedAuditEvents    AuditEvent[]              @relation("AuditPerformedBy")
+  auditEvents             AuditEvent[]
+  contributions           Contribution[]
+  dependants              Dependant[]
+  uploadedFiles           FileUpload[]
+  createdImportJobs       ImportJob[]
+  loginActivities         LoginActivity[]
+  membershipFines         MembershipFine[]
   membershipStatusHistory MembershipStatusHistory[]
-
-  // ======================================================
-  // SELF RELATIONS
-  // ======================================================
-
-  createdBy User? @relation("UserCreatedBy", fields: [createdById], references: [id])
-
-  createdUsers User[] @relation("UserCreatedBy")
-
-  updatedBy User? @relation("UserUpdatedBy", fields: [updatedById], references: [id])
-
-  updatedUsers User[] @relation("UserUpdatedBy")
-
-  roleHistoryRecorded UserRoleHistory[] @relation("RoleHistoryRecordedBy")
-
-  deactivatedAt   DateTime?
-  deactivatedById String?
-
-  deactivationReason String?
-
-  suspendedAt    DateTime?
-  suspendedUntil DateTime?
-
-  revokedAt DateTime?
-
-  deactivatedBy User? @relation("UserDeactivatedBy", fields: [deactivatedById], references: [id])
-
-  deactivatedUsers User[] @relation("UserDeactivatedBy")
-
-  performedAuditEvents AuditEvent[] @relation("AuditPerformedBy")
-
-  affectedAuditEvents AuditEvent[] @relation("AuditAffectedUser")
-
-  // ======================================================
-  // INDEXES
-  // ======================================================
-  welfareClaims WelfareClaim[]
+  nextOfKin               NextOfKin?
+  notificationRecipients  NotificationRecipient[]
+  createdNotifications    Notification[]
+  otps                    OTP[]
+  refreshTokens           RefreshToken[]
+  sessions                Session[]
+  roleHistoryRecorded     UserRoleHistory[]         @relation("RoleHistoryRecordedBy")
+  userRoleHistories       UserRoleHistory[]
+  createdBy               User?                     @relation("UserCreatedBy", fields: [createdById], references: [id])
+  createdUsers            User[]                    @relation("UserCreatedBy")
+  deactivatedBy           User?                     @relation("UserDeactivatedBy", fields: [deactivatedById], references: [id])
+  deactivatedUsers        User[]                    @relation("UserDeactivatedBy")
+  profilePhoto            FileUpload?               @relation("ProfilePhoto", fields: [profilePhotoId], references: [id])
+  region                  Region?                   @relation(fields: [regionId], references: [id])
+  role                    Role?                     @relation(fields: [roleId], references: [id])
+  updatedBy               User?                     @relation("UserUpdatedBy", fields: [updatedById], references: [id])
+  updatedUsers            User[]                    @relation("UserUpdatedBy")
+  welfareClaims           WelfareClaim[]
 
   @@index([email])
   @@index([employmentStatus])
@@ -471,34 +271,21 @@ model UserRoleHistory {
 }
 
 model NextOfKin {
-  id String @id @default(uuid())
-
-  userId String @unique
-
-  fullName String
-
-  relationship String
-
-  phone String?
-
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  fullName         String
+  relationship     String
+  phone            String?
+  nationalId       String?
+  address          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
   alternativePhone String?
-
-  email String?
-
-  nationalId String?
-
-  address String?
-
-  occupation String?
-
-  isPrimary Boolean @default(true)
-
-  remarks String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email            String?
+  isPrimary        Boolean  @default(true)
+  occupation       String?
+  remarks          String?
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([nationalId])
   @@map("next_of_kin")
@@ -542,11 +329,11 @@ model FileUpload {
   uploadedViaImport Boolean        @default(false)
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
-  uploadedBy        User           @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
-  profilePhotoUsers User[]         @relation("ProfilePhoto")
-  importJobs        ImportJob[]
-  isDeleted         Boolean        @default(false)
   deletedAt         DateTime?
+  isDeleted         Boolean        @default(false)
+  uploadedBy        User           @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  importJobs        ImportJob[]
+  profilePhotoUsers User[]         @relation("ProfilePhoto")
 
   @@index([uploadedById])
   @@index([category])
@@ -584,77 +371,29 @@ model LoginActivity {
 }
 
 model AuditEvent {
-  id String @id @default(uuid())
-
-  // ======================================================
-  // WHO PERFORMED ACTION
-  // ======================================================
-
-  performedById String?
-
-  performedBy User? @relation("AuditPerformedBy", fields: [performedById], references: [id])
-
-  // ======================================================
-  // AFFECTED USER
-  // ======================================================
-
+  id             String        @id @default(uuid())
+  userId         String?
+  action         String
+  entityType     String
+  entityId       String?
+  description    String?
+  oldValues      Json?
+  newValues      Json?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime      @default(now())
   affectedUserId String?
-
-  affectedUser User? @relation("AuditAffectedUser", fields: [affectedUserId], references: [id])
-
-  // ======================================================
-  // EVENT DETAILS
-  // ======================================================
-
-  action String
-
-  module String?
-
-  entityType String
-
-  entityId String?
-
-  description String?
-
-  severity AuditSeverity @default(info)
-
-  status AuditStatus @default(success)
-
-  // ======================================================
-  // DATA CHANGES
-  // ======================================================
-
-  oldValues Json?
-
-  newValues Json?
-
-  metadata Json?
-
-  // ======================================================
-  // REQUEST CONTEXT
-  // ======================================================
-
-  ipAddress String?
-
-  userAgent String?
-
-  requestId String?
-
-  method String?
-
-  endpoint String?
-
-  // ======================================================
-  // TIMESTAMPS
-  // ======================================================
-
-  createdAt DateTime @default(now())
-
-  // ======================================================
-  // INDEXES
-  // ======================================================
-  user   User?   @relation(fields: [userId], references: [id])
-  userId String?
+  endpoint       String?
+  metadata       Json?
+  method         String?
+  module         String?
+  performedById  String?
+  requestId      String?
+  severity       AuditSeverity @default(info)
+  status         AuditStatus   @default(success)
+  affectedUser   User?         @relation("AuditAffectedUser", fields: [affectedUserId], references: [id])
+  performedBy    User?         @relation("AuditPerformedBy", fields: [performedById], references: [id])
+  user           User?         @relation(fields: [userId], references: [id])
 
   @@index([performedById])
   @@index([affectedUserId])
@@ -668,17 +407,6 @@ model AuditEvent {
   @@map("audit_events")
 }
 
-enum AuditSeverity {
-  info
-  warning
-  critical
-}
-
-enum AuditStatus {
-  success
-  failed
-}
-
 model Session {
   id             String    @id @default(uuid())
   userId         String
@@ -687,9 +415,9 @@ model Session {
   userAgent      String?
   expiresAt      DateTime
   revoked        Boolean   @default(false)
-  revokedAt      DateTime?
   lastActivityAt DateTime  @default(now())
   createdAt      DateTime  @default(now())
+  revokedAt      DateTime?
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -707,8 +435,8 @@ model Notification {
   createdAt     DateTime                @default(now())
   updatedAt     DateTime                @updatedAt
   recipients    NotificationRecipient[]
-  targetRoles   NotificationRole[]
   targetRegions NotificationRegion[]
+  targetRoles   NotificationRole[]
   createdBy     User?                   @relation(fields: [createdById], references: [id])
 
   @@map("notifications")
@@ -743,28 +471,22 @@ model NotificationRole {
 }
 
 model NotificationRegion {
-  id String @id @default(uuid())
-
+  id             String       @id @default(uuid())
   notificationId String
   regionId       String
-
-  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-
-  region Region @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  region         Region       @relation(fields: [regionId], references: [id], onDelete: Cascade)
 
   @@unique([notificationId, regionId])
   @@map("notification_regions")
 }
 
 model AnnouncementRegion {
-  id String @id @default(uuid())
-
+  id             String       @id @default(uuid())
   announcementId String
   regionId       String
-
-  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
-
-  region Region @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  region         Region       @relation(fields: [regionId], references: [id], onDelete: Cascade)
 
   @@unique([announcementId, regionId])
   @@map("announcement_regions")
@@ -783,8 +505,8 @@ model Announcement {
   createdAt     DateTime                @default(now())
   updatedAt     DateTime                @updatedAt
   recipients    AnnouncementRecipient[]
-  targetRoles   AnnouncementRole[]
   targetRegions AnnouncementRegion[]
+  targetRoles   AnnouncementRole[]
   createdBy     User                    @relation(fields: [createdById], references: [id])
 
   @@map("announcements")
@@ -828,6 +550,86 @@ model WelfareClaim {
   @@map("welfare_claims")
 }
 
+model ImportJob {
+  id                String           @id @default(uuid())
+  type              ImportType
+  fileId            String
+  status            ImportStatus     @default(pending)
+  totalRecords      Int?
+  processedRecords  Int?
+  failedRecords     Int?
+  errorReport       Json?
+  createdById       String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  completedAt       DateTime?
+  queueJobId        String?
+  startedAt         DateTime?
+  successfulRecords Int?
+  errors            ImportJobError[]
+  createdBy         User             @relation(fields: [createdById], references: [id])
+  file              FileUpload       @relation(fields: [fileId], references: [id])
+
+  @@index([fileId])
+  @@index([createdById])
+  @@index([status])
+  @@map("import_jobs")
+}
+
+model ImportJobError {
+  id          String    @id @default(uuid())
+  importJobId String
+  rowNumber   Int
+  error       String
+  rowData     Json?
+  createdAt   DateTime  @default(now())
+  importJob   ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+
+  @@index([importJobId])
+  @@map("import_job_errors")
+}
+
+enum MembershipStatus {
+  active
+  inactive
+  suspended
+  revoked
+  deceased
+  resigned
+  pending
+}
+
+enum ContributionStatus {
+  pending
+  partial
+  paid
+  overdue
+  waived
+}
+
+enum ContributionPeriod {
+  monthly
+  quarterly
+  yearly
+}
+
+enum Gender {
+  male
+  female
+  other
+}
+
+enum AuditSeverity {
+  info
+  warning
+  critical
+}
+
+enum AuditStatus {
+  success
+  failed
+}
+
 enum EmploymentStatus {
   serving
   retired
@@ -857,65 +659,6 @@ enum OtpType {
   email_verification
   forgot_password
   login_verification
-}
-
-model ImportJob {
-  id String @id @default(uuid())
-
-  type String
-
-  fileId String
-
-  status ImportStatus @default(pending)
-
-  totalRecords Int?
-
-  processedRecords  Int?
-  successfulRecords Int?
-  failedRecords     Int?
-
-  queueJobId String?
-  metadata Json?
-
-  startedAt   DateTime?
-  completedAt DateTime?
-
-  errorReport Json?
-
-  createdById String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  file FileUpload @relation(fields: [fileId], references: [id])
-
-  createdBy User @relation(fields: [createdById], references: [id])
-
-  errors ImportJobError[]
-
-  @@index([fileId])
-  @@index([createdById])
-  @@index([status])
-  @@map("import_jobs")
-}
-
-model ImportJobError {
-  id String @id @default(uuid())
-
-  importJobId String
-
-  rowNumber Int
-
-  error String
-
-  rowData Json?
-
-  createdAt DateTime @default(now())
-
-  importJob ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
-
-  @@index([importJobId])
-  @@map("import_job_errors")
 }
 
 enum ImportType {

@@ -100,7 +100,7 @@ router.patch(
 router.post(
   "/announcements",
   authMiddleware,
-  authorize("create_announcement"),
+  // authorize("create_announcement"),
   AnnouncementController.create
 );
 
@@ -131,14 +131,14 @@ router.patch(
 router.patch(
   "/announcements/:id/publish",
   authMiddleware,
-  authorize("update_announcement"),
+  // authorize("update_announcement"),
   AnnouncementController.publish
 );
 
 router.patch(
   "/announcements/:id/unpublish",
   authMiddleware,
-  authorize("update_announcement"),
+  // authorize("update_announcement"),
   AnnouncementController.unpublish
 );
 

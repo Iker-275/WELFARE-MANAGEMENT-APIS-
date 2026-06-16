@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
+    "build": "prisma generate && prisma migrate deploy",
     "workers": "node ./services/workers.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -20,6 +21,7 @@
     "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.2",
     "bullmq": "^5.76.10",
+    "cors": "^2.8.6",
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.20",
     "express": "^5.2.1",

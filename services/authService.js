@@ -36,7 +36,7 @@ export const AuthService = {
 
     const passwordHash = await hashValue(data.password);
 
-    console.log("Password hash:", passwordHash);
+  
 
     const user = await AuthRepository.createUser({
       email: data.email,
@@ -49,17 +49,11 @@ export const AuthService = {
       regionId: process.env.DEFAULT_REGION_ID,
     });
 
-    console
-      .log("Created user:", user);
+   
 
     const otp = generateOTP();
 
-    console.log("Generated OTP:", otp);
-
     const codeHash = await hashOTP(otp);
-
-
-    console.log("OTP hash:", codeHash);
 
     const expiresAt = dayjs()
       .add(OTP_EXPIRY_MINUTES, "minute")
@@ -89,12 +83,12 @@ export const AuthService = {
     if (!user) {
       throw new Error("User not found");
     }
-    console.log("Found user:", user);
+    
     const otpRecord = await AuthRepository.getLatestOTP(
       user.id,
       OTP_TYPES.EMAIL_VERIFICATION
     );
-    console.log("OTP record:", otpRecord);
+    
     if (!otpRecord) {
       throw new Error("OTP not found");
     }
@@ -112,7 +106,7 @@ export const AuthService = {
       otpRecord.codeHash
     );
 
-    console.log("Valid OTP:", validOTP);
+    
 
     if (!validOTP) {
       throw new Error("Invalid OTP");
@@ -134,7 +128,7 @@ export const AuthService = {
       expiresAt: dayjs().add(7, "day").toDate(),
     });
 
-    console.log("Verified user:", verifiedUser);
+   
     return {
       success: true,
       message: "Email verified successfully",
@@ -267,29 +261,28 @@ export const AuthService = {
       expiresAt,
     });
 
-
-    await emailQueue.add("send-email",
-      {
-        type: "SEND_OTP",
-        payload: {
-          email: user.email,
-          otp,
-        },
-      },
-      {
-        attempts: 3,
-        backoff: {
-          type: "exponential",
-          delay: 3000,
-        },
-        removeOnComplete: true,
-        removeOnFail: false,
-      }
-    );
-    // await sendOTPEmail(
-    //   user.email,
-    //   otp
+    // await emailQueue.add("send-email",
+    //   {
+    //     type: "SEND_OTP",
+    //     payload: {
+    //       email: user.email,
+    //       otp,
+    //     },
+    //   },
+    //   {
+    //     attempts: 3,
+    //     backoff: {
+    //       type: "exponential",
+    //       delay: 3000,
+    //     },
+    //     removeOnComplete: true,
+    //     removeOnFail: false,
+    //   }
     // );
+    await sendOTPEmail(
+      user.email,
+      otp
+    );
 
     return {
       success: true,

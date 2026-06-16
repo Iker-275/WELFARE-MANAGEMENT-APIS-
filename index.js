@@ -9,7 +9,7 @@ import appRoutes from "./routes/appRoutes.js";
 import { seedRoles } from "./prisma/seeders/roleSeeder.js"; //not yet used
 import { seedRegions } from "./prisma/seeders/regionSeeder.js"; //not yet used
 import { PermissionSeeder } from "./prisma/seeders/permissionSeeder.js"; //not yet used
-
+import cors from "cors";
 
 const connectionString = `${process.env.DATABASE_URL}`;
 const adapter = new PrismaPg({ connectionString });
@@ -20,6 +20,7 @@ export { prisma };
 
 const app = express();
 const port = process.env.PORT || 3000;
+app.use(cors());
 app.use(bodyParser.json());
 app.use("/api", appRoutes);
 
@@ -33,14 +34,14 @@ async function main() {
 
 }
 
-//main()
-  // .then(() => {
-  //   console.log("Database seeding complete");
-  // })
-  // .catch((error) => {
-  //   console.error(error);
-  //   process.exit(1);
-  // });
+// main()
+//   .then(() => {
+//     console.log("Database seeding complete");
+//   })
+//   .catch((error) => {
+//     console.error(error);
+//     process.exit(1);
+//   });
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
