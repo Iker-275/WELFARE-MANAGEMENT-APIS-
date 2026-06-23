@@ -2,7 +2,7 @@ import express from "express";
 
 import { AuthController } from "../controllers/authControllers.js";
 import {createRole, getRoles,updateRole,deleteRole} from "../controllers/roleController.js";
-import { createRegion, getRegions, updateRegion, deleteRegion} from "../controllers/regionController.js";
+import { createRegion, getRegions, updateRegion, deleteRegion,getRegionUsers} from "../controllers/regionController.js";
 import { UserController }from "../controllers/userController.js";
 import {createPermission, getPermissions, assignPermissionToRole,removePermissionFromRole,getRolePermissions,assignPermissionsToRole, removePermissionsFromRole, syncRolePermissions} from "../controllers/permissionController.js";
 import { authMiddleware} from "../middleware/authMiddleware.js";
@@ -55,6 +55,7 @@ router.post("/regions", authMiddleware, createRegion);
 router.get("/regions", authMiddleware, getRegions);
 router.patch("/regions/:id", authMiddleware, updateRegion);
 router.delete("/regions/:id", authMiddleware, deleteRegion);
+router.get("/regions/:id/users",authMiddleware,getRegionUsers);
 
 //permissions
 //authorize("create_permission")

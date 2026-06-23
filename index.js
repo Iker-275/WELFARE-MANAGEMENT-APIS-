@@ -34,14 +34,14 @@ async function main() {
 
 }
 
-// main()
-//   .then(() => {
-//     console.log("Database seeding complete");
-//   })
-//   .catch((error) => {
-//     console.error(error);
-//     process.exit(1);
-//   });
+main()
+  .then(() => {
+    console.log("Database seeding complete");
+  })
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

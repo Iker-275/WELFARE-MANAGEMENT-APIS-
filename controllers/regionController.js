@@ -30,13 +30,38 @@ async (req, res, next) => {
 
 };
 
-export const getRegions =
+export const getRegions2 =
 async (req, res, next) => {
 
   try {
 
     const regions =
       await service.getRegions();
+
+    return res.status(200).json({
+      success: true,
+      data: regions
+    });
+
+  } catch (error) {
+    next(error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch regions. " + error.message
+    });
+  }
+
+};
+
+export const getRegions =
+async (req, res, next) => {
+
+  try {
+
+    const regions =
+      await service.getRegions({
+        search: req.query.search
+      });
 
     return res.status(200).json({
       success: true,
@@ -102,6 +127,35 @@ async (req, res, next) => {
       success: false,
       message: "Failed to delete region. " + error.message
      });
+  }
+
+};
+
+
+
+export const getRegionUsers =
+async (req, res, next) => {
+
+  try {
+
+    const result =
+      await service.getRegionUsers(
+        req.params.id,
+        req.query
+      );
+
+    return res.status(200).json({
+      success: true,
+      data: result.data,
+      pagination: result.pagination
+    });
+
+  } catch (error) {
+    next(error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch region users. " + error.message
+    });
   }
 
 };

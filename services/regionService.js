@@ -36,28 +36,32 @@ export class RegionService {
     return region;
   }
 
-  async getRegions() {
+ 
+  async getRegions(filters = {}) {
 
-    const cachedRegions =
-      await RedisService.safeGet(
-        REGION_CACHE_KEY
-      );
+  const cacheKey =
+    filters.search
+      ? `${REGION_CACHE_KEY}:${filters.search}`
+      : REGION_CACHE_KEY;
 
-    if (cachedRegions) {
-      return cachedRegions;
-    }
+  const cached =
+    await RedisService.safeGet(cacheKey);
 
-    const regions =
-      await repo.findAll();
-
-    await RedisService.safeSet(
-      REGION_CACHE_KEY,
-      regions,
-      REGION_CACHE_TTL
-    );
-
-    return regions;
+  if (cached) {
+    return cached;
   }
+
+  const regions =
+    await repo.findAll(filters);
+
+  await RedisService.safeSet(
+    cacheKey,
+    regions,
+    REGION_CACHE_TTL
+  );
+
+  return regions;
+}
 
   async updateRegion(id, data) {
 
@@ -147,4 +151,34 @@ export class RegionService {
     return true;
   }
 
+
+async getRegionUsers(
+  regionId,
+  filters
+) {
+
+  const region =
+    await repo.findById(regionId);
+
+  if (!region) {
+    throw new Error(
+      "Region not found"
+    );
+  }
+
+  const page =
+    Number(filters.page) || 1;
+
+  const limit =
+    Number(filters.limit) || 20;
+
+  return repo.getRegionUsers(
+    regionId,
+    {
+      ...filters,
+      page,
+      limit
+    }
+  );
+}
 }
